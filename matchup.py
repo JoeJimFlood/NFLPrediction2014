@@ -4,6 +4,9 @@ import pandas as pd
 import numpy as np
 from numpy.random import poisson, uniform
 from numpy import mean
+import time
+
+po = True
 
 teamsheetpath = sys.path[0] + '/teamcsvs/'
 
@@ -84,8 +87,8 @@ def get_residual_performance(team): #Get how each team has done compared to the 
             residual_stats.update({'GOFOR2': float(score_df['PAT2FA'].sum()) / score_df['TDF'].sum()})
         except ZeroDivisionError:
             residual_stats.update({'GOFOR2': .1})
-    print team
-    print residual_stats
+    #print team
+    #print residual_stats
     return residual_stats
 
 def get_score(expected_scores): #Get the score for a team based on expected scores
@@ -113,62 +116,91 @@ def get_score(expected_scores): #Get the score for a team based on expected scor
     return score
 
 def game(team_1, team_2,
-         expected_scores_1, expected_scores_2): #Get two scores and determine a winner
+         expected_scores_1, expected_scores_2,
+         playoff): #Get two scores and determine a winner
     score_1 = get_score(expected_scores_1)
     score_2 = get_score(expected_scores_2)
     if score_1 > score_2:
         win_1 = 1
         win_2 = 0
+        draw_1 = 0
+        draw_2 = 0
     elif score_2 > score_1:
         win_1 = 0
         win_2 = 1
+        draw_1 = 0
+        draw_2 = 0
     else:
-        win_1 = 0.5
-        win_2 = 0.5
-    summary = {team_1: [win_1, score_1]}
-    summary.update({team_2: [win_2, score_2]})
+        if playoff:
+            win_1 = 0.5
+            win_2 = 0.5
+            draw_1 = 0
+            draw_2 = 0
+        else:
+            win_1 = 0
+            win_2 = 0
+            draw_1 = 1
+            draw_2 = 1
+    summary = {team_1: [win_1, draw_1, score_1]}
+    summary.update({team_2: [win_2, draw_2, score_2]})
     return summary
 
-def get_expected_scores(team_1_stats, team_2_stats): #Get the expected scores for a matchup based on the previous teams' performances
+def get_expected_scores(team_1_stats, team_2_stats, team_1_df, team_2_df): #Get the expected scores for a matchup based on the previous teams' performances
     expected_scores = {}
     for stat in team_1_stats:
-        expected_scores.update({'TD': team_1_stats['TDF'] - team_2_stats['TDA']})
-        expected_scores.update({'FG': team_1_stats['FGF'] - team_2_stats['FGA']})
-        expected_scores.update({'S': team_1_stats['SFF'] - team_2_stats['SFA']})
+        expected_scores.update({'TD': mean([team_1_stats['TDF'] + team_2_df['TDA'].mean(),
+                                            team_2_stats['TDA'] + team_1_df['TDF'].mean()])})
+        expected_scores.update({'FG': mean([team_1_stats['FGF'] + team_2_df['FGA'].mean(),
+                                            team_2_stats['FGA'] + team_1_df['FGF'].mean()])})
+        expected_scores.update({'S': mean([team_1_stats['SFF'] + team_2_df['SFA'].mean(),
+                                            team_2_stats['SFA'] + team_1_df['SFF'].mean()])})
         expected_scores.update({'GOFOR2': team_1_stats['GOFOR2']})
         expected_scores.update({'PAT1PROB': mean([team_1_stats['PAT1%F'], team_2_stats['PAT1%A']])})
         expected_scores.update({'PAT2PROB': mean([team_1_stats['PAT2%F'], team_2_stats['PAT2%A']])})
-    print(expected_scores)
+    #print(expected_scores)
     return expected_scores
             
-def main(team_1, team_2):
+def matchup(team_1, team_2):
+    ts = time.time()
+    team_1_season = pd.DataFrame.from_csv(teamsheetpath + team_1 + '.csv')
+    team_2_season = pd.DataFrame.from_csv(teamsheetpath + team_2 + '.csv')
     stats_1 = get_residual_performance(team_1)
     stats_2 = get_residual_performance(team_2)
-    expected_scores_1 = get_expected_scores(stats_1, stats_2)
-    expected_scores_2 = get_expected_scores(stats_2, stats_1)
-    team_1_wins = []
-    team_2_wins = []
+    expected_scores_1 = get_expected_scores(stats_1, stats_2, team_1_season, team_2_season)
+    expected_scores_2 = get_expected_scores(stats_2, stats_1, team_2_season, team_1_season)
+    team_1_wins = 0
+    team_2_wins = 0
+    team_1_draws = 0
+    team_2_draws = 0
     team_1_scores = []
     team_2_scores = []
     i = 0
     error = 1
-    while error > 0.000001 or i < 10000: #Run until convergence after 10,000 iterations
+    while error > 0.000001 or i < 10000000: #Run until convergence after 100,000 iterations
         summary = game(team_1, team_2,
-                       expected_scores_1, expected_scores_2)
-        team_1_wins.append(summary[team_1][0])
-        team_2_wins.append(summary[team_2][0])
-        team_1_scores.append(summary[team_1][1])
-        team_2_scores.append(summary[team_2][1])
-        team_1_prob = float(sum(team_1_wins)) / len(team_1_wins)
+                       expected_scores_1, expected_scores_2,
+                       po)
+        team_1_prev_wins = team_1_wins
+        team_1_wins += summary[team_1][0]
+        team_2_wins += summary[team_2][0]
+        team_1_draws += summary[team_1][1]
+        team_2_draws += summary[team_2][1]
+        team_1_scores.append(summary[team_1][2])
+        team_2_scores.append(summary[team_2][2])
+        team_1_prob = float(team_1_wins) / len(team_1_scores)
+        team_2_prob = float(team_2_wins) / len(team_2_scores)
         if i > 0:
-            team_1_prev_prob = float(sum(team_1_wins[:len(team_1_wins) - 1])) / (len(team_1_wins) - 1)
+            team_1_prev_prob = float(team_1_prev_wins) / i
             error = team_1_prob - team_1_prev_prob
         i = i + 1
-    if i == 10000:
-        print('Probability converged within 10,000 iterations')
+    if i == 10000000:
+        print('Probability converged within 10 million iterations')
     else:
         print('Probability converged after ' + str(i) + ' iterations')
     games = pd.DataFrame.from_items([(team_1, team_1_scores), (team_2, team_2_scores)])
     summaries = games.describe(percentiles = [0.025, 0.1, 0.25, 0.5, 0.75, 0.9, 0.975])
-    output = {'ProbWin': {team_1: team_1_prob, team_2: 1 - team_1_prob}, 'Scores': summaries}
+    output = {'ProbWin': {team_1: team_1_prob, team_2: team_2_prob}, 'Scores': summaries}
+
+    print(team_1 + '/' + team_2 + ' score distributions computed in ' + str(round(time.time() - ts, 1)) + ' seconds')
+
     return output
