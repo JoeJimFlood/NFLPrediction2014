@@ -5,6 +5,7 @@ import numpy as np
 from numpy.random import poisson, uniform
 from numpy import mean
 import time
+import math
 
 po = True
 
@@ -54,6 +55,7 @@ def get_residual_performance(team): #Get how each team has done compared to the 
             score_df['PAT1%F'][week] = float(score_df['PAT1FS'][week]) / score_df['PAT1FA'][week]
         except ZeroDivisionError:
             score_df['PAT1%F'][week] = 0.99
+        #print ('For: ' + str(score_df['PAT1%F'][week]))
         try:
             score_df['PAT2%F'][week] = float(score_df['PAT2FS'][week]) / score_df['PAT2FA'][week]
         except ZeroDivisionError:
@@ -62,6 +64,7 @@ def get_residual_performance(team): #Get how each team has done compared to the 
             score_df['PAT1%A'][week] = float(score_df['PAT1AS'][week]) / score_df['PAT1AA'][week]
         except ZeroDivisionError:
             score_df['PAT1%A'][week] = 0.99
+        #print ('Against: ' + str(score_df['PAT1%F'][week]))
         try:
             score_df['PAT2%A'][week] = float(score_df['PAT2AS'][week]) / score_df['PAT2AA'][week]
         except ZeroDivisionError:
@@ -93,11 +96,20 @@ def get_residual_performance(team): #Get how each team has done compared to the 
 
 def get_score(expected_scores): #Get the score for a team based on expected scores
     score = 0
-    tds = poisson(expected_scores['TD'])
+    if expected_scores['TD'] > 0:
+        tds = poisson(expected_scores['TD'])
+    else:
+        tds = poisson(0.01)
     score = score + 6 * tds
-    fgs = poisson(expected_scores['FG'])
+    if expected_scores['FG'] > 0:
+        fgs = poisson(expected_scores['FG'])
+    else:
+        fgs = poisson(0.01)
     score = score + 3 * fgs
-    sfs = poisson(expected_scores['S'])
+    if expected_scores['S'] > 0:
+        sfs = poisson(expected_scores['S'])
+    else:
+        sfs = poisson(0.01)
     score = score + 2 * sfs
     for td in range(tds):
         go_for_2_determinant = uniform(0, 1)
@@ -108,6 +120,7 @@ def get_score(expected_scores): #Get the score for a team based on expected scor
             else:
                 continue
         else: #Going for 1
+            #print(expected_scores['PAT1PROB'])
             successful_pat_determinant = uniform(0, 1)
             if successful_pat_determinant <= expected_scores['PAT1PROB']:
                 score = score + 1
@@ -154,9 +167,22 @@ def get_expected_scores(team_1_stats, team_2_stats, team_1_df, team_2_df): #Get 
                                             team_2_stats['FGA'] + team_1_df['FGF'].mean()])})
         expected_scores.update({'S': mean([team_1_stats['SFF'] + team_2_df['SFA'].mean(),
                                             team_2_stats['SFA'] + team_1_df['SFF'].mean()])})
+        #print mean([team_1_stats['PAT1%F'] + team_2_df['PAT1AS'].astype('float').sum() / team_2_df['PAT1AA'].sum(),
+        #       team_2_stats['PAT1%A'] + team_1_df['PAT1FS'].astype('float').sum() / team_1_df['PAT1FA'].sum()])
         expected_scores.update({'GOFOR2': team_1_stats['GOFOR2']})
-        expected_scores.update({'PAT1PROB': mean([team_1_stats['PAT1%F'], team_2_stats['PAT1%A']])})
-        expected_scores.update({'PAT2PROB': mean([team_1_stats['PAT2%F'], team_2_stats['PAT2%A']])})
+        pat1prob = mean([team_1_stats['PAT1%F'] + team_2_df['PAT1AS'].astype('float').sum() / team_2_df['PAT1AA'].sum(),
+                         team_2_stats['PAT1%A'] + team_1_df['PAT1FS'].astype('float').sum() / team_1_df['PAT1FA'].sum()])
+        if not math.isnan(pat1prob):
+            expected_scores.update({'PAT1PROB': pat1prob})
+        else:
+            expected_scores.update({'PAT1PROB': 0.99})
+        #print(expected_scores['PAT1PROB'])
+        pat2prob = mean([team_1_stats['PAT2%F'] + team_2_df['PAT2AS'].astype('float').sum() / team_2_df['PAT2AA'].sum(),
+                         team_2_stats['PAT2%A'] + team_1_df['PAT2FS'].astype('float').sum() / team_1_df['PAT2FA'].sum()])
+        if not math.isnan(pat2prob):
+            expected_scores.update({'PAT2PROB': pat2prob})
+        else:
+            expected_scores.update({'PAT2PROB': 0.5})
     #print(expected_scores)
     return expected_scores
             
@@ -176,7 +202,7 @@ def matchup(team_1, team_2):
     team_2_scores = []
     i = 0
     error = 1
-    while error > 0.000001 or i < 10000000: #Run until convergence after 100,000 iterations
+    while error > 0.000001 or i < 5000000: #Run until convergence after 100,000 iterations
         summary = game(team_1, team_2,
                        expected_scores_1, expected_scores_2,
                        po)
@@ -193,8 +219,8 @@ def matchup(team_1, team_2):
             team_1_prev_prob = float(team_1_prev_wins) / i
             error = team_1_prob - team_1_prev_prob
         i = i + 1
-    if i == 10000000:
-        print('Probability converged within 10 million iterations')
+    if i == 5000000:
+        print('Probability converged within 5 million iterations')
     else:
         print('Probability converged after ' + str(i) + ' iterations')
     games = pd.DataFrame.from_items([(team_1, team_1_scores), (team_2, team_2_scores)])
