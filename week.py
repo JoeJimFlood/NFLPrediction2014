@@ -10,25 +10,22 @@ import os
 
 week_timer = time.time()
 
-week_number = 3
+week_number = 4
 
 matchups = collections.OrderedDict()
-matchups['Thursday Night'] = [('ATL', 'TB')]
-matchups['Sunday Morning'] = [('BUF', 'SD'),            
-                              ('STL', 'DAL'),
-                              ('PHI', 'WAS'),
-                              ('NYG', 'HOU'),
-                              ('NO', 'MIN'),
-                              ('CIN', 'TEN'),
-                              ('CLE', 'BAL'),
-                              ('DET', 'GB'),
-                              ('JAX', 'IND'),
-                              ('OAK', 'NE')]
-matchups['Sunday Afternoon'] = [('ARI', 'SF'),
-                                ('SEA', 'DEN'),
-                                ('MIA', 'KC')]            
-matchups['Sunday Night'] = [('CAR', 'PIT')]
-matchups['Monday Night'] = [('NYJ', 'CHI')]
+matchups['Thursday Night'] = [('WAS', 'NYG')]
+matchups['Sunday Morning'] = [('CHI', 'GB'),
+                              ('HOU', 'BUF'),
+                              ('IND', 'TEN'),
+                              ('BAL', 'CAR'),
+                              ('NYJ', 'DET'),
+                              ('PIT', 'TB'),
+                              ('OAK', 'MIA')]
+matchups['Sunday Afternoon'] = [('SD', 'JAX'),
+                                ('SF', 'PHI'),
+                                ('MIN', 'ATL')]
+matchups['Sunday Night'] = [('DAL', 'NO')]
+matchups['Monday Night'] = [('KC', 'NE')]
 
 location = os.getcwd().replace('\\', '/')
 output_file = location + '/Weekly Forecasts/Week' + str(week_number) + '.xlsx'
