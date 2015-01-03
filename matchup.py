@@ -202,7 +202,7 @@ def matchup(team_1, team_2):
     team_2_scores = []
     i = 0
     error = 1
-    while error > 0.000001 or i < 5000000: #Run until convergence after 100,000 iterations
+    while error > 0.000001 or i < 5000000: #Run until convergence after 5 million iterations
         summary = game(team_1, team_2,
                        expected_scores_1, expected_scores_2,
                        po)
