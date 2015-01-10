@@ -10,13 +10,38 @@ import os
 
 week_timer = time.time()
 
-week_number = '_Divisional'
+week_number = 'div_matrix'
 
 matchups = collections.OrderedDict()
-matchups['Saturday'] = [('NE', 'BAL'),
-                        ('SEA', 'CAR')]
-matchups['Sunday'] = [('GB', 'DAL'),
-                      ('DEN', 'IND')]
+matchups['Matchups'] = [('NE', 'DEN'),
+                        ('NE', 'IND'),
+                        ('NE', 'BAL'),
+                        ('NE', 'SEA'),
+                        ('NE', 'GB'),
+                        ('NE', 'DAL'),
+                        ('NE', 'CAR'),
+                        ('DEN', 'IND'),
+                        ('DEN', 'BAL'),
+                        ('DEN', 'SEA'),
+                        ('DEN', 'GB'),
+                        ('DEN', 'DAL'),
+                        ('DEN', 'CAR'),
+                        ('IND', 'BAL'),
+                        ('IND', 'SEA'),
+                        ('IND', 'GB'),
+                        ('IND', 'DAL'),
+                        ('IND', 'CAR'),
+                        ('BAL', 'SEA'),
+                        ('BAL', 'GB'),
+                        ('BAL', 'DAL'),
+                        ('BAL', 'CAR'),
+                        ('SEA', 'GB'),
+                        ('SEA', 'DAL'),
+                        ('SEA', 'CAR'),
+                        ('GB', 'DAL'),
+                        ('GB', 'CAR'),
+                        ('DAL', 'CAR')]
+
 
 location = os.getcwd().replace('\\', '/')
 output_file = location + '/Weekly Forecasts/Week' + str(week_number) + '.xlsx'
