@@ -10,11 +10,16 @@ import os
 
 week_timer = time.time()
 
-week_number = '_Conference'
+week_number = 'conf_matrix'
 
 matchups = collections.OrderedDict()
-matchups['Sunday'] = [('SEA', 'GB'),
-                      ('NE', 'IND')]
+matchups['Matchups'] = [('NE', 'IND'),
+                        ('NE', 'SEA'),
+                        ('NE', 'GB'),
+                        ('IND', 'SEA'),
+                        ('IND', 'GB'),
+                        ('SEA', 'GB')]
+
 
 location = os.getcwd().replace('\\', '/')
 output_file = location + '/Weekly Forecasts/Week' + str(week_number) + '.xlsx'
