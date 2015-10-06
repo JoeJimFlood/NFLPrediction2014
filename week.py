@@ -10,11 +10,10 @@ import os
 
 week_timer = time.time()
 
-week_number = '_Conference'
+week_number = '_Super_Bowl'
 
 matchups = collections.OrderedDict()
-matchups['Sunday'] = [('SEA', 'GB'),
-                      ('NE', 'IND')]
+matchups['Super Bowl XLIX'] = [('NE', 'SEA')]
 
 location = os.getcwd().replace('\\', '/')
 output_file = location + '/Weekly Forecasts/Week' + str(week_number) + '.xlsx'
